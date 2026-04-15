@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="hi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#1a6b3c" />
+    <meta name="description" content="समाधान मित्र — किसानों का अपना AI सहायक। फसल, स्वास्थ्य, सरकारी योजना — सब कुछ एक जगह।" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="समाधान" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>समाधान मित्र — AI किसान सहायक</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: 'Noto Sans Devanagari', 'Segoe UI', system-ui, sans-serif;
+        background: #f0f4f0;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        overscroll-behavior: none;
+      }
+      /* Scrollbar styling */
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #c8e6c9; border-radius: 4px; }
+      ::-webkit-scrollbar-thumb:hover { background: #a5d6a7; }
+      /* Focus styling */
+      input:focus, button:focus-visible {
+        outline: 2px solid #1a6b3c;
+        outline-offset: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "samadhan-frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "/Users/yashasvi/Desktop/tinkerquest 3/samadhan/frontend",
+      "port": 5173
+    },
+    {
+      "name": "samadhan-backend",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["/Users/yashasvi/Desktop/tinkerquest 3/samadhan/backend/app.py"],
+      "cwd": "/Users/yashasvi/Desktop/tinkerquest 3/samadhan/backend",
+      "port": 5001
+    }
+  ]
+}

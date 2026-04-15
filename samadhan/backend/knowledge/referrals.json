@@ -1,0 +1,107 @@
+[
+    {
+        "name": "कृषि विज्ञान केंद्र (KVK) रुड़की",
+        "type": "KVK",
+        "address": "IITR Campus, Roorkee, Haridwar, Uttarakhand",
+        "phone": "01332-285583",
+        "hours": "सोमवार-शनिवार, सुबह 9 - शाम 5"
+    },
+    {
+        "name": "जिला अस्पताल हरिद्वार",
+        "type": "District Hospital",
+        "address": "Roshnabad, Haridwar, Uttarakhand 249407",
+        "phone": "01334-226283",
+        "hours": "24 घंटे (इमरजेंसी)"
+    },
+    {
+        "name": "उप-स्वास्थ्य केंद्र लंढौरा",
+        "type": "Sub-center",
+        "address": "Landhaura, Roorkee Block, Haridwar",
+        "phone": "स्थानीय ASHA बहन से संपर्क करें",
+        "hours": "सोमवार-शनिवार, सुबह 9 - दोपहर 2"
+    },
+    {
+        "name": "प्राथमिक स्वास्थ्य केंद्र (PHC) भगवानपुर",
+        "type": "PHC",
+        "address": "Bhagwanpur, Roorkee Block, Haridwar",
+        "phone": "01332-250XX (स्थानीय पूछताछ)",
+        "hours": "सोमवार-शनिवार, सुबह 9 - शाम 5"
+    },
+    {
+        "name": "सामुदायिक स्वास्थ्य केंद्र (CHC) रुड़की",
+        "type": "CHC",
+        "address": "Civil Hospital Road, Roorkee, Haridwar",
+        "phone": "01332-272XXX",
+        "hours": "24 घंटे (इमरजेंसी), OPD: सुबह 9 - दोपहर 2"
+    },
+    {
+        "name": "जनसेवा केंद्र (CSC) रुड़की",
+        "type": "CSC",
+        "address": "Station Road, Roorkee, Haridwar",
+        "phone": "स्थानीय CSC हेल्पडेस्क",
+        "hours": "सोमवार-शनिवार, सुबह 10 - शाम 6"
+    },
+    {
+        "name": "जनसेवा केंद्र (CSC) लंढौरा",
+        "type": "CSC",
+        "address": "Landhaura Main Market, Haridwar",
+        "phone": "स्थानीय CSC हेल्पडेस्क",
+        "hours": "सोमवार-शनिवार, सुबह 10 - शाम 5"
+    },
+    {
+        "name": "खंड विकास अधिकारी (BDO) कार्यालय रुड़की",
+        "type": "BDO Office",
+        "address": "Block Office, Roorkee, Haridwar",
+        "phone": "01332-272XXX",
+        "hours": "सोमवार-शनिवार, सुबह 10 - शाम 5"
+    },
+    {
+        "name": "जिला कृषि अधिकारी हरिद्वार",
+        "type": "Agriculture Office",
+        "address": "Collectorate Campus, Haridwar",
+        "phone": "01334-226XXX",
+        "hours": "सोमवार-शनिवार, सुबह 10 - शाम 5"
+    },
+    {
+        "name": "एम्बुलेंस (इमरजेंसी)",
+        "type": "Emergency",
+        "address": "कहीं भी",
+        "phone": "108",
+        "hours": "24 घंटे"
+    },
+    {
+        "name": "PM-Kisan हेल्पलाइन",
+        "type": "Helpline",
+        "address": "टोल फ्री",
+        "phone": "155261 या 011-24300606",
+        "hours": "सोमवार-शुक्रवार, सुबह 9 - शाम 6"
+    },
+    {
+        "name": "आयुष्मान भारत हेल्पलाइन",
+        "type": "Helpline",
+        "address": "टोल फ्री",
+        "phone": "14555",
+        "hours": "24 घंटे"
+    },
+    {
+        "name": "किसान कॉल सेंटर",
+        "type": "Helpline",
+        "address": "टोल फ्री",
+        "phone": "1800-180-1551",
+        "hours": "सुबह 6 - रात 10, सातों दिन"
+    },
+    {
+        "name": "PMFBY (फसल बीमा) हेल्पलाइन",
+        "type": "Helpline",
+        "address": "टोल फ्री",
+        "phone": "1800-180-1551",
+        "hours": "सुबह 6 - रात 10"
+    },
+    {
+        "name": "LPG / उज्ज्वला हेल्पलाइन",
+        "type": "Helpline",
+        "address": "टोल फ्री",
+        "phone": "1906",
+        "hours": "24 घंटे"
+    }
+]

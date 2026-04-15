@@ -1,0 +1,205 @@
+[
+    {
+        "scenario": "fever_over_2_days",
+        "symptoms_described": [
+            "bukhar",
+            "tez bukhar",
+            "badan garam",
+            "बुखार",
+            "तेज बुखार",
+            "बदन गरम"
+        ],
+        "immediate_advice": "पानी ज्यादा पिएं। Paracetamol ले सकते हैं अगर दर्द हो। आराम करें। गीला कपड़ा माथे पर रखें।",
+        "seek_help_when": "2 दिन से ज्यादा बुखार हो, या तेज ठंड लग रही हो, या उल्टी/दस्त भी हो",
+        "where_to_go": "नजदीकी उप-स्वास्थ्य केंद्र (Sub-center) या PHC",
+        "ayushman_relevant": true,
+        "emergency_signs": [
+            "105°F से ज्यादा बुखार",
+            "बेहोशी",
+            "शरीर पर रैश/दाने",
+            "गर्दन अकड़ना"
+        ],
+        "NEVER_do": "कभी भी मलेरिया/डेंगू/टायफॉइड का निदान न करें। Paracetamol/ORS के अलावा कोई दवाई न बताएं।"
+    },
+    {
+        "scenario": "child_diarrhea",
+        "symptoms_described": [
+            "दस्त",
+            "loose motion",
+            "बच्चे को दस्त",
+            "पतला पखाना",
+            "उल्टी-दस्त"
+        ],
+        "immediate_advice": "ORS का घोल बनाकर थोड़ा-थोड़ा पिलाएं। माँ का दूध बंद न करें। साफ पानी पिलाएं।",
+        "seek_help_when": "6 घंटे में पेशाब न हो, आंखें धंसी लगें, बहुत कमजोरी हो, खून आए",
+        "where_to_go": "नजदीकी Sub-center या PHC — तुरंत",
+        "ayushman_relevant": true,
+        "emergency_signs": [
+            "बच्चा बेहोश",
+            "6 घंटे में पेशाब नहीं",
+            "दस्त में खून",
+            "बहुत ज्यादा उल्टियां"
+        ],
+        "NEVER_do": "कभी कोई एंटीबायोटिक या दस्त रोकने की दवाई न बताएं।"
+    },
+    {
+        "scenario": "pregnancy_concerns",
+        "symptoms_described": [
+            "गर्भवती",
+            "pregnancy",
+            "पेट में दर्द गर्भ",
+            "हमल",
+            "गर्भ में तकलीफ"
+        ],
+        "immediate_advice": "आराम करें। पानी पिएं। अगली ANM/ASHA बहन की विजिट तक इंतजार करें।",
+        "seek_help_when": "खून आए, तेज पेट दर्द, सिर दर्द या धुंधला दिखे, पैरों में बहुत सूजन",
+        "where_to_go": "तुरंत PHC या District Hospital जाएं",
+        "ayushman_relevant": true,
+        "emergency_signs": [
+            "योनि से रक्तस्राव",
+            "तेज पेट दर्द",
+            "बेहोशी",
+            "बच्चे की हलचल बंद"
+        ],
+        "NEVER_do": "कभी कोई दवाई न बताएं। गर्भवती को हमेशा डॉक्टर के पास भेजें।"
+    },
+    {
+        "scenario": "chest_pain_emergency",
+        "symptoms_described": [
+            "सीने में दर्द",
+            "chest pain",
+            "छाती में दर्द",
+            "सांस फूलना दर्द"
+        ],
+        "immediate_advice": "⚠️ यह इमरजेंसी हो सकती है! तुरंत 108 पर कॉल करें। बैठकर आराम करें। तंग कपड़े ढीले करें।",
+        "seek_help_when": "तुरंत — इंतजार न करें",
+        "where_to_go": "108 एम्बुलेंस → District Hospital / नजदीकी बड़ा अस्पताल",
+        "ayushman_relevant": true,
+        "emergency_signs": [
+            "बाएं हाथ में दर्द",
+            "पसीना आना",
+            "सांस लेने में बहुत तकलीफ",
+            "बेहोशी"
+        ],
+        "NEVER_do": "कभी हल्के में न लें। कोई दवाई न बताएं। तुरंत 108 कॉल करवाएं।"
+    },
+    {
+        "scenario": "skin_issues_farming",
+        "symptoms_described": [
+            "खुजली",
+            "चकत्ते",
+            "त्वचा पर दाने",
+            "skin problem",
+            "खेत में काम से खुजली"
+        ],
+        "immediate_advice": "प्रभावित जगह साबुन-पानी से धोएं। खुजलाएं नहीं। साफ कपड़े पहनें।",
+        "seek_help_when": "3 दिन में ठीक न हो, पूस/मवाद आए, बुखार भी हो, फैल रहा हो",
+        "where_to_go": "Sub-center या PHC",
+        "ayushman_relevant": false,
+        "emergency_signs": [
+            "तेजी से फैलना",
+            "बुखार के साथ",
+            "सूजन बढ़ना"
+        ],
+        "NEVER_do": "कोई क्रीम या दवाई न बताएं। सिर्फ सफाई की सलाह दें।"
+    },
+    {
+        "scenario": "animal_snake_bite",
+        "symptoms_described": [
+            "सांप ने काटा",
+            "कुत्ते ने काटा",
+            "जानवर ने काटा",
+            "snake bite",
+            "dog bite"
+        ],
+        "immediate_advice": "⚠️ तुरंत अस्पताल जाएं! सांप: काटी जगह को हिलाएं नहीं, टूर्निकेट न बांधें। कुत्ता: साबुन-पानी से 15 मिनट धोएं।",
+        "seek_help_when": "तुरंत — किसी भी जानवर के काटने पर",
+        "where_to_go": "PHC या District Hospital — तुरंत। एंटी-वेनम/रैबीज टीका वहीं मिलेगा",
+        "ayushman_relevant": true,
+        "emergency_signs": [
+            "सांप: सूजन बढ़ना, सांस की तकलीफ",
+            "कुत्ता: पागल कुत्ता हो"
+        ],
+        "NEVER_do": "कभी झाड़-फूंक या घरेलू इलाज न करें। तुरंत अस्पताल भेजें।"
+    },
+    {
+        "scenario": "injury_wound",
+        "symptoms_described": [
+            "चोट",
+            "घाव",
+            "कट गया",
+            "injury",
+            "खून बह रहा"
+        ],
+        "immediate_advice": "साफ कपड़े से दबाकर खून रोकें। साफ पानी से धोएं। गंदगी न लगने दें।",
+        "seek_help_when": "खून न रुके, गहरा कट हो, टांके लगने हों, जंग लगी चीज से कटे",
+        "where_to_go": "Sub-center (छोटी चोट) या PHC/Hospital (गहरी चोट)",
+        "ayushman_relevant": true,
+        "emergency_signs": [
+            "खून न रुकना",
+            "हड्डी दिखना",
+            "बेहोशी",
+            "जंग लगी चीज से चोट (टेटनस)"
+        ],
+        "NEVER_do": "कोई दवाई न बताएं। टेटनस इंजेक्शन डॉक्टर ही देगा।"
+    },
+    {
+        "scenario": "eye_problems",
+        "symptoms_described": [
+            "आंख में दर्द",
+            "आंख लाल",
+            "दिखाई नहीं दे रहा",
+            "eye problem",
+            "आंख में कुछ गया"
+        ],
+        "immediate_advice": "साफ पानी से आंख धोएं। आंख मलें नहीं। अंधेरे में आराम करें।",
+        "seek_help_when": "दर्द कम न हो, दिखाई न दे, पूस आए, रसायन गिरा हो",
+        "where_to_go": "नेत्र चिकित्सालय (Eye Hospital) या District Hospital",
+        "ayushman_relevant": true,
+        "emergency_signs": [
+            "अचानक दिखना बंद",
+            "रसायन/कीटनाशक आंख में",
+            "तेज दर्द"
+        ],
+        "NEVER_do": "कोई आई ड्रॉप न बताएं। विशेषज्ञ को दिखाएं।"
+    },
+    {
+        "scenario": "breathing_difficulty",
+        "symptoms_described": [
+            "सांस की तकलीफ",
+            "सांस फूलना",
+            "दमा",
+            "breathing problem",
+            "asthma"
+        ],
+        "immediate_advice": "बैठकर आराम करें, सीधे बैठें। खुली हवा में जाएं। तंग कपड़े ढीले करें।",
+        "seek_help_when": "सांस लेने में बहुत तकलीफ, होंठ नीले, बोल न पा रहे",
+        "where_to_go": "PHC या District Hospital। गंभीर हो तो 108 कॉल करें",
+        "ayushman_relevant": true,
+        "emergency_signs": [
+            "होंठ/नाखून नीले",
+            "बोल नहीं पा रहे",
+            "बेहोशी"
+        ],
+        "NEVER_do": "कोई दवाई न बताएं। इनहेलर डॉक्टर ही देगा।"
+    },
+    {
+        "scenario": "child_vaccination",
+        "symptoms_described": [
+            "टीका",
+            "vaccination",
+            "बच्चे का टीका",
+            "टीकाकरण",
+            "बच्चे को सुई"
+        ],
+        "immediate_advice": "बच्चों का समय पर टीकाकरण बहुत जरूरी है! ASHA बहन से मिलें — वे घर आकर टीका लगवाती हैं।",
+        "seek_help_when": "टीका छूट गया हो, या टीके के बाद तेज बुखार/सूजन हो",
+        "where_to_go": "Sub-center (हर बुधवार टीकाकरण दिवस) या PHC",
+        "ayushman_relevant": false,
+        "emergency_signs": [
+            "टीके के बाद तेज बुखार 3 दिन से ज्यादा",
+            "टीके की जगह बड़ी सूजन या पूस"
+        ],
+        "NEVER_do": "किसी भी टीके के खिलाफ सलाह न दें। टीकाकरण हमेशा समर्थन करें।"
+    }
+]
