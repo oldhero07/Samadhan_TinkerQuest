@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
  * VoiceInput — Record audio via MediaRecorder, send as base64 to backend for Groq Whisper.
  * Falls back to Web Speech API if MediaRecorder is not available.
  */
-export default function VoiceInput({ onAudioReady, onTranscript, disabled }) {
+export default function VoiceInput({ onAudioReady, onTranscript, disabled, large = false }) {
   const [recording, setRecording] = useState(false);
   const [duration, setDuration] = useState(0);
   const [micError, setMicError] = useState(null);
@@ -102,8 +102,13 @@ export default function VoiceInput({ onAudioReady, onTranscript, disabled }) {
       setRecording(true);
       setDuration(0);
 
+      // Auto-stop at 60 seconds
+      if (timerRef.current) clearInterval(timerRef.current);
       timerRef.current = setInterval(() => {
-        setDuration((d) => d + 1);
+        setDuration((d) => {
+          if (d >= 59) { stopRecording(); return 0; }
+          return d + 1;
+        });
       }, 1000);
 
     } catch (err) {
@@ -137,62 +142,74 @@ export default function VoiceInput({ onAudioReady, onTranscript, disabled }) {
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
+  const btnSize = large ? 80 : 42;
+  const btnFontSize = large ? "1.8rem" : "1.2rem";
+
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6, position: "relative" }}>
-      {recording && (
-        <span style={{
-          fontSize: "0.72rem",
-          color: "#d32f2f",
-          fontWeight: 700,
-          fontVariantNumeric: "tabular-nums",
-          animation: "pulse-text 1s infinite",
-        }}>
-          🔴 {formatTime(duration)}
-        </span>
-      )}
-      <button
-        type="button"
-        onClick={toggle}
-        disabled={disabled}
-        title={micError ?? (recording ? "रोकें" : "बोलें (हिंदी)")}
-        style={{
-          flexShrink: 0,
-          width: 42,
-          height: 42,
-          borderRadius: "50%",
-          border: "none",
-          cursor: disabled ? "not-allowed" : "pointer",
-          background: micError ? "#e65100" : recording ? "#d32f2f" : "#1a6b3c",
-          color: "#fff",
-          fontSize: "1.2rem",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          boxShadow: recording
-            ? "0 0 0 4px rgba(211,47,47,0.3)"
-            : "0 2px 6px rgba(0,0,0,0.2)",
-          transition: "all 0.2s",
-          animation: recording ? "pulse 1s ease-in-out infinite" : "none",
-        }}
-      >
-        {recording ? "⏹" : "🎙"}
-      </button>
-      {micError && (
-        <span style={{
-          position: "absolute",
-          bottom: 50,
-          right: 0,
-          background: "#e65100",
-          color: "#fff",
-          fontSize: "0.72rem",
-          padding: "4px 10px",
-          borderRadius: 8,
-          whiteSpace: "nowrap",
-          boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
-          zIndex: 20,
-        }}>
-          {micError}
-        </span>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0, position: "relative" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        {recording && !large && (
+          <span style={{
+            fontSize: "0.72rem",
+            color: "#d32f2f",
+            fontWeight: 700,
+            fontVariantNumeric: "tabular-nums",
+            animation: "pulse-text 1s infinite",
+          }}>
+            🔴 {formatTime(duration)}
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={toggle}
+          disabled={disabled}
+          title={micError ?? (recording ? "रोकें" : "बोलें (हिंदी)")}
+          style={{
+            flexShrink: 0,
+            width: btnSize,
+            height: btnSize,
+            borderRadius: "50%",
+            border: "none",
+            cursor: disabled ? "not-allowed" : "pointer",
+            background: micError ? "#e65100" : recording ? "#d32f2f" : "#1a6b3c",
+            color: "#fff",
+            fontSize: btnFontSize,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: recording
+              ? "0 0 0 6px rgba(211,47,47,0.3)"
+              : large
+              ? "0 4px 16px rgba(26,107,60,0.35)"
+              : "0 2px 6px rgba(0,0,0,0.2)",
+            transition: "all 0.2s",
+            animation: recording ? "pulse 1s ease-in-out infinite" : "none",
+          }}
+        >
+          {recording ? "⏹" : "🎙"}
+        </button>
+        {micError && (
+          <span style={{
+            position: "absolute",
+            bottom: large ? 96 : 50,
+            right: 0,
+            background: "#e65100",
+            color: "#fff",
+            fontSize: "0.72rem",
+            padding: "4px 10px",
+            borderRadius: 8,
+            whiteSpace: "nowrap",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+            zIndex: 20,
+          }}>
+            {micError}
+          </span>
+        )}
+      </div>
+      {large && (
+        <div style={{ fontSize: "0.78rem", color: "#1a6b3c", fontWeight: 600, marginTop: 6, textAlign: "center" }}>
+          {recording ? `🔴 ${formatTime(duration)} · रोकने के लिए दबाएं` : "बोलने के लिए दबाएं"}
+        </div>
       )}
       <style>{`
         @keyframes pulse {

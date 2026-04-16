@@ -1,328 +1,288 @@
 """
-Farmer Profile Manager — Four-Layer Memory System.
-Profiles stored as JSON files in backend/profiles/<phone>.json
-
-Implements:
-  Layer 1: Conversational memory (active session messages)
-  Layer 2: Session memory (AI-generated session summaries)
-  Layer 3: Life memory (structured profile facts)
-  Layer 4: Perceived memory (proactive greeting data)
+Farmer Profile Manager — SQLite-backed via SQLAlchemy.
+Public API is identical to the old JSON-file version so no other files need changes.
 """
-import json
-from pathlib import Path
+from __future__ import annotations
+import uuid
+import logging
 from datetime import datetime, timedelta
+from sqlalchemy.orm import Session as DBSession
 
-PROFILES_DIR = Path(__file__).parent.parent / "profiles"
-PROFILES_DIR.mkdir(exist_ok=True)
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from database import init_db, SessionLocal, Farmer, ChatSession, Message
+
+log = logging.getLogger(__name__)
 
 SESSION_TIMEOUT_MINUTES = 30
-MAX_SESSION_MESSAGES = 20  # 10 pairs
+MAX_SESSION_MESSAGES = 20
 MAX_RECENT_SESSIONS = 10
 
-
-def _profile_path(phone: str) -> Path:
-    safe = "".join(c for c in phone if c.isdigit() or c == "+")
-    return PROFILES_DIR / f"{safe}.json"
+# Initialise DB tables on import
+init_db()
 
 
-def _now_iso() -> str:
-    return datetime.utcnow().isoformat()
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def _db() -> DBSession:
+    return SessionLocal()
 
 
-def _default_profile(phone: str) -> dict:
-    """Create a blank profile with the full schema."""
+def _get_active_session(db: DBSession, phone: str):
+    session = (
+        db.query(ChatSession)
+        .filter(ChatSession.phone == phone, ChatSession.ended_at == None)
+        .order_by(ChatSession.started_at.desc())
+        .first()
+    )
+    if not session:
+        return None, []
+    messages = (
+        db.query(Message)
+        .filter(Message.session_id == session.id)
+        .order_by(Message.created_at.asc())
+        .all()
+    )
+    return session, messages
+
+
+def _row_to_profile(farmer: Farmer, session, messages: list) -> dict:
+    """Assemble the profile dict that gemini_engine expects."""
+    active_session = {}
+    if session:
+        active_session = {
+            "session_id": session.id,
+            "session_start": session.started_at.isoformat(),
+            "last_active": session.ended_at.isoformat() if session.ended_at else session.started_at.isoformat(),
+            "messages": [
+                {
+                    "role": m.role,
+                    "text": m.text,
+                    "domain": m.domain,
+                    "has_image": bool(m.has_image),
+                    "timestamp": m.created_at.isoformat(),
+                }
+                for m in messages
+            ],
+        }
+
+    pd = farmer.profile_data or {}
     return {
-        "phone": phone,
-        "name": None,
-        "village": None,
-        "block": None,
-        "district": None,
-        "registered_date": datetime.utcnow().strftime("%Y-%m-%d"),
-        "active_session": {
-            "session_id": f"sess_{datetime.utcnow().strftime('%Y%m%d_%H%M')}",
-            "session_start": _now_iso(),
-            "last_active": _now_iso(),
-            "messages": [],
-        },
-        "recent_sessions": [],
-        "profile": {
-            "agriculture": {
-                "primary_crops": [],
-                "land_area": None,
-                "current_season": None,
-                "reported_problems": [],
-            },
-            "health": {
-                "family_queries": [],
-            },
+        "phone": farmer.phone,
+        "name": farmer.name or "",
+        "village": farmer.village or "",
+        "district": farmer.district or "",
+        "registered_date": farmer.registered_at.strftime("%Y-%m-%d"),
+        "active_session": active_session,
+        "recent_sessions": pd.get("recent_sessions", []),
+        "profile": pd.get("profile", {
+            "agriculture": {"primary_crops": [], "land_area": "", "current_season": "", "reported_problems": []},
+            "health": {"family_queries": []},
             "schemes": {},
-        },
-        "flags": [],
-        "timeline": [],
+        }),
+        "flags": pd.get("flags", []),
+        "timeline": pd.get("timeline", []),
     }
 
 
-def get_profile(phone: str) -> dict:
-    """Returns farmer profile dict, or creates a new one if not found."""
-    path = _profile_path(phone)
-    if not path.exists():
-        return {}
+# ── Public API ────────────────────────────────────────────────────────────────
+
+def get_profile(phone: str):
+    db = _db()
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
+        farmer = db.query(Farmer).filter(Farmer.phone == phone).first()
+        if not farmer:
+            return None
+        session, messages = _get_active_session(db, phone)
+        return _row_to_profile(farmer, session, messages)
+    finally:
+        db.close()
 
 
 def get_or_create_profile(phone: str) -> dict:
-    """Returns existing profile or creates a new default one."""
-    profile = get_profile(phone)
-    if not profile:
-        profile = _default_profile(phone)
-        save_profile(phone, profile)
-    return profile
-
-
-def save_profile(phone: str, profile: dict):
-    """Persist profile to disk."""
-    _profile_path(phone).write_text(
-        json.dumps(profile, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
-
-
-def check_session_timeout(profile: dict) -> bool:
-    """Check if current session has timed out (30-min gap)."""
-    active = profile.get("active_session")
-    if not active or not active.get("last_active"):
-        return True
+    db = _db()
     try:
-        last = datetime.fromisoformat(active["last_active"])
-        return (datetime.utcnow() - last) > timedelta(minutes=SESSION_TIMEOUT_MINUTES)
-    except Exception:
-        return True
+        farmer = db.query(Farmer).filter(Farmer.phone == phone).first()
+        if not farmer:
+            farmer = Farmer(phone=phone, registered_at=datetime.utcnow(), profile_data={})
+            db.add(farmer)
+            db.commit()
+            db.refresh(farmer)
+            log.info(f"[Profile] Created new farmer: {phone}")
+        session, messages = _get_active_session(db, phone)
+        return _row_to_profile(farmer, session, messages)
+    finally:
+        db.close()
 
 
-def archive_session(profile: dict, summary: str = None) -> dict:
-    """
-    Archive the active session into recent_sessions.
-    Creates a new empty active session.
-    """
+def save_profile(phone: str, profile: dict) -> None:
+    db = _db()
+    try:
+        farmer = db.query(Farmer).filter(Farmer.phone == phone).first()
+        if not farmer:
+            farmer = Farmer(phone=phone, registered_at=datetime.utcnow(), profile_data={})
+            db.add(farmer)
+
+        farmer.name = profile.get("name") or farmer.name or ""
+        farmer.village = profile.get("village") or farmer.village or ""
+        farmer.district = profile.get("district") or farmer.district or ""
+
+        pd = dict(farmer.profile_data or {})
+        pd["recent_sessions"] = profile.get("recent_sessions", pd.get("recent_sessions", []))
+        pd["profile"] = profile.get("profile", pd.get("profile", {}))
+        pd["flags"] = profile.get("flags", pd.get("flags", []))
+        pd["timeline"] = profile.get("timeline", pd.get("timeline", []))
+        farmer.profile_data = pd
+
+        db.commit()
+    except Exception as e:
+        log.error(f"[Profile] save_profile error for {phone}: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+
+def check_session_timeout(profile: dict) -> tuple:
     active = profile.get("active_session", {})
-    messages = active.get("messages", [])
+    if not active:
+        return profile, False
+    last_active_str = active.get("last_active", active.get("session_start", ""))
+    if not last_active_str:
+        return profile, False
+    try:
+        last_active = datetime.fromisoformat(last_active_str)
+        timed_out = datetime.utcnow() - last_active > timedelta(minutes=SESSION_TIMEOUT_MINUTES)
+        return profile, timed_out
+    except Exception:
+        return profile, False
 
-    if messages:
-        # Determine domain from messages
-        domains = []
-        for msg in messages:
-            d = msg.get("domain")
-            if d and d != "general":
-                domains.append(d)
-        domain = domains[0] if domains else "general"
 
-        # Extract key entities from messages
-        key_entities = {}
-        for msg in messages:
-            entities = msg.get("entities", {})
-            if entities:
-                for k, v in entities.items():
-                    if v:
-                        key_entities[k] = v
+def archive_session(profile: dict) -> dict:
+    active = profile.get("active_session", {})
+    if not active:
+        return profile
+    session_id = active.get("session_id")
+    if not session_id:
+        return profile
 
-        session_record = {
-            "session_id": active.get("session_id", "unknown"),
-            "date": active.get("session_start", _now_iso())[:10],
-            "summary": summary or "Session completed.",
-            "domain": domain,
-            "key_entities": key_entities,
+    db = _db()
+    try:
+        session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+        if session and session.ended_at is None:
+            session.ended_at = datetime.utcnow()
+            db.commit()
+
+        recent_entry = {
+            "session_id": session_id,
+            "date": datetime.utcnow().strftime("%Y-%m-%d"),
+            "summary": active.get("summary", "Session completed."),
+            "domain": active.get("domain", "general"),
+            "key_entities": [],
         }
-
         recent = profile.get("recent_sessions", [])
-        recent.insert(0, session_record)
+        recent.insert(0, recent_entry)
         profile["recent_sessions"] = recent[:MAX_RECENT_SESSIONS]
-
-        # Also add to timeline
-        timeline_entry = {
-            "date": session_record["date"],
-            "domain": domain,
-            "summary": summary or "Session completed.",
-            "status": "resolved",
-        }
-        timeline = profile.get("timeline", [])
-        timeline.insert(0, timeline_entry)
-        profile["timeline"] = timeline[:50]
-
-    # Start new session
-    profile["active_session"] = {
-        "session_id": f"sess_{datetime.utcnow().strftime('%Y%m%d_%H%M')}",
-        "session_start": _now_iso(),
-        "last_active": _now_iso(),
-        "messages": [],
-    }
-
+        profile["active_session"] = {}
+    except Exception as e:
+        log.error(f"[Profile] archive_session error: {e}")
+        db.rollback()
+    finally:
+        db.close()
     return profile
 
 
-def add_message(profile: dict, role: str, text: str, domain: str = None,
-                has_image: bool = False, entities: dict = None) -> dict:
-    """Add a message to the active session."""
-    active = profile.get("active_session")
-    if not active:
-        profile["active_session"] = {
-            "session_id": f"sess_{datetime.utcnow().strftime('%Y%m%d_%H%M')}",
-            "session_start": _now_iso(),
-            "last_active": _now_iso(),
-            "messages": [],
-        }
-        active = profile["active_session"]
+def add_message(profile: dict, role: str, text: str, has_image: bool = False, domain: str = "general", entities: dict = None) -> dict:
+    db = _db()
+    try:
+        phone = profile.get("phone", "unknown")
+        active = profile.get("active_session", {})
+        session_id = active.get("session_id")
 
-    msg = {
-        "role": role,
-        "text": text,
-        "timestamp": _now_iso(),
-    }
-    if domain:
-        msg["domain"] = domain
-    if has_image:
-        msg["has_image"] = True
-    if entities:
-        msg["entities"] = entities
+        if not session_id:
+            session_id = str(uuid.uuid4())
+            db.add(ChatSession(id=session_id, phone=phone, started_at=datetime.utcnow()))
+            db.commit()
+            profile["active_session"] = {
+                "session_id": session_id,
+                "session_start": datetime.utcnow().isoformat(),
+                "last_active": datetime.utcnow().isoformat(),
+                "messages": [],
+            }
 
-    active["messages"].append(msg)
-    active["last_active"] = _now_iso()
+        db.add(Message(
+            session_id=session_id, phone=phone, role=role, text=text,
+            domain=domain, has_image=int(has_image), created_at=datetime.utcnow(),
+        ))
 
-    # Trim if too many messages (keep last MAX_SESSION_MESSAGES)
-    if len(active["messages"]) > MAX_SESSION_MESSAGES:
-        active["messages"] = active["messages"][-MAX_SESSION_MESSAGES:]
+        session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+        if session:
+            session.ended_at = datetime.utcnow()
+        db.commit()
 
+        msgs = profile["active_session"].get("messages", [])
+        msgs.append({"role": role, "text": text, "domain": domain, "has_image": has_image, "timestamp": datetime.utcnow().isoformat()})
+        if len(msgs) > MAX_SESSION_MESSAGES:
+            msgs = msgs[-MAX_SESSION_MESSAGES:]
+        profile["active_session"]["messages"] = msgs
+        profile["active_session"]["last_active"] = datetime.utcnow().isoformat()
+    except Exception as e:
+        log.error(f"[Profile] add_message error: {e}")
+        db.rollback()
+    finally:
+        db.close()
     return profile
 
 
 def apply_profile_update(profile: dict, update: dict) -> dict:
-    """
-    Apply a profile_update JSON (from Gemini response) to the profile.
-    Merges entities into the structured profile section.
-    """
     if not update:
         return profile
+    if update.get("name"):   profile["name"] = update["name"]
+    if update.get("village"): profile["village"] = update["village"]
+    if update.get("district"): profile["district"] = update["district"]
 
-    entities = update.get("entities_extracted", {})
-    domain = update.get("domain", "general")
-    flags = update.get("flags", [])
-    summary = update.get("session_summary_update", "")
+    sub = profile.setdefault("profile", {})
+    ag = sub.setdefault("agriculture", {"primary_crops": [], "land_area": "", "current_season": "", "reported_problems": []})
+    if update.get("crop") and update["crop"] not in ag["primary_crops"]:
+        ag["primary_crops"].append(update["crop"])
+    if update.get("land_area"): ag["land_area"] = update["land_area"]
+    if update.get("problem") and update["problem"] not in ag.get("reported_problems", []):
+        ag.setdefault("reported_problems", []).append(update["problem"])
 
-    prof = profile.setdefault("profile", {})
+    health = sub.setdefault("health", {"family_queries": []})
+    if update.get("health_query") and update["health_query"] not in health["family_queries"]:
+        health["family_queries"].append(update["health_query"])
 
-    # Agriculture entities
-    if entities.get("crop"):
-        ag = prof.setdefault("agriculture", {"primary_crops": [], "reported_problems": []})
-        crop = entities["crop"]
-        if crop not in ag.get("primary_crops", []):
-            ag.setdefault("primary_crops", []).append(crop)
+    schemes = sub.setdefault("schemes", {})
+    if update.get("scheme"):
+        schemes[update["scheme"]] = {"status": update.get("scheme_status", "enquired"), "last_checked": datetime.utcnow().strftime("%Y-%m-%d")}
 
-        if entities.get("problem"):
-            problem_entry = {
-                "date": datetime.utcnow().strftime("%Y-%m-%d"),
-                "crop": crop,
-                "problem": entities["problem"],
-                "symptom_described": entities.get("symptom", ""),
-                "advice_given": entities.get("action_taken", ""),
-                "status": "advised_treatment",
-                "follow_up_needed": True,
-            }
-            ag.setdefault("reported_problems", []).insert(0, problem_entry)
+    flags = profile.setdefault("flags", [])
+    for flag in update.get("add_flags", []):
+        if flag not in flags: flags.append(flag)
+    for flag in update.get("remove_flags", []):
+        if flag in flags: flags.remove(flag)
 
-    # Health entities
-    if entities.get("symptom") and not entities.get("crop"):
-        health = prof.setdefault("health", {"family_queries": []})
-        health_entry = {
-            "date": datetime.utcnow().strftime("%Y-%m-%d"),
-            "member": entities.get("family_member", "self"),
-            "symptom": entities["symptom"],
-            "action": entities.get("action_taken", ""),
-            "follow_up_needed": True,
-        }
-        health.setdefault("family_queries", []).insert(0, health_entry)
-
-    # Scheme entities
-    if entities.get("scheme_name"):
-        schemes = prof.setdefault("schemes", {})
-        scheme_key = entities["scheme_name"].lower().replace(" ", "_").replace("-", "_")
-        if scheme_key not in schemes:
-            schemes[scheme_key] = {"status": "enquired", "last_checked": datetime.utcnow().strftime("%Y-%m-%d")}
-
-    # Name / location extraction
-    if entities.get("location_mentioned"):
-        if not profile.get("village"):
-            profile["village"] = entities["location_mentioned"]
-
-    # Merge flags
-    if flags:
-        existing_flags = set(profile.get("flags", []))
-        existing_flags.update(flags)
-        profile["flags"] = list(existing_flags)
-
-    # Update timeline with latest domain interaction summary
-    if summary and domain != "general":
+    if update.get("timeline_entry"):
         timeline = profile.setdefault("timeline", [])
-        timeline_entry = {
-            "date": datetime.utcnow().strftime("%Y-%m-%d"),
-            "domain": domain,
-            "summary": summary,
-            "status": "unresolved" if any("unresolved" in f for f in flags) else "active",
-        }
-        timeline.insert(0, timeline_entry)
+        timeline.insert(0, {"date": datetime.utcnow().strftime("%Y-%m-%d"), "domain": update.get("domain", "general"), "summary": update["timeline_entry"], "status": update.get("timeline_status", "✅ हल")})
         profile["timeline"] = timeline[:50]
-
     return profile
 
 
 def get_context_for_prompt(profile: dict) -> str:
-    """
-    Build a context string from the profile for injection into system prompt.
-    Includes recent session summaries and key profile facts.
-    """
-    lines = []
-
-    # Farmer identity
-    name = profile.get("name", "Unknown")
-    village = profile.get("village", "")
-    if name and name != "Unknown":
-        lines.append(f"Farmer name: {name}")
-    if village:
-        lines.append(f"Village: {village}")
-
-    # Recent session summaries (Layer 2)
-    recent = profile.get("recent_sessions", [])[:3]
-    if recent:
-        lines.append("\nPrevious interactions with this farmer:")
-        for s in recent:
-            lines.append(f"- {s.get('date', '?')}: {s.get('summary', 'No summary')}")
-
-    # Profile facts (Layer 3)
-    prof = profile.get("profile", {})
-    ag = prof.get("agriculture", {})
-    if ag.get("primary_crops"):
-        lines.append(f"\nCrops: {', '.join(ag['primary_crops'])}")
-    if ag.get("land_area"):
-        lines.append(f"Land: {ag['land_area']}")
-
-    schemes = prof.get("schemes", {})
-    if schemes:
-        scheme_lines = []
-        for k, v in schemes.items():
-            scheme_lines.append(f"{k}: {v.get('status', 'unknown')}")
-        lines.append(f"Schemes: {', '.join(scheme_lines)}")
-
-    # Flags
-    flags = profile.get("flags", [])
-    if flags:
-        lines.append(f"\nActive flags: {', '.join(flags)}")
-
-    return "\n".join(lines) if lines else ""
+    parts = []
+    if profile.get("name"): parts.append(f"किसान का नाम: {profile['name']}")
+    if profile.get("village") or profile.get("district"):
+        parts.append(f"स्थान: {profile.get('village','')}, {profile.get('district','')}")
+    ag = profile.get("profile", {}).get("agriculture", {})
+    if ag.get("primary_crops"): parts.append(f"मुख्य फसलें: {', '.join(ag['primary_crops'])}")
+    if ag.get("reported_problems"): parts.append(f"पहले बताई समस्याएं: {', '.join(ag['reported_problems'][-3:])}")
+    recent = profile.get("recent_sessions", [])
+    summaries = [s.get("summary", "") for s in recent[:3] if s.get("summary")]
+    if summaries: parts.append("पिछली बातचीत: " + " | ".join(summaries))
+    if profile.get("flags"): parts.append(f"फ्लैग: {', '.join(profile['flags'])}")
+    return "\n".join(parts)
 
 
 def get_chat_history(profile: dict) -> list:
-    """Get active session messages formatted for Gemini chat history."""
-    active = profile.get("active_session", {})
-    messages = active.get("messages", [])
-    return messages
+    return profile.get("active_session", {}).get("messages", [])

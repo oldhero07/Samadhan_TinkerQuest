@@ -3,7 +3,7 @@ from __future__ import annotations
 Gemini Engine — Single-call LLM architecture.
 Replaces the old Sunno/Khet/Haq multi-agent setup.
 
-One Gemini 2.5 Flash call handles:
+One Gemini call handles:
   - Conversational Hindi response
   - Domain classification (agriculture/health/schemes)
   - Structured profile update extraction
@@ -14,13 +14,24 @@ import os
 import json
 import re
 import base64
+import logging
+from datetime import datetime
 from pathlib import Path
 from google import genai
 from google.genai import types
 
+log = logging.getLogger(__name__)
+
 _client = None
 
 KNOWLEDGE_DIR = Path(__file__).parent.parent / "knowledge"
+
+# Model cascade: primary is latest flash; fallback is lite version
+PRIMARY_MODEL   = "gemini-2.5-flash"
+FALLBACK_MODEL  = "gemini-2.5-flash-lite"
+
+# Knowledge cache — load once at startup, not per call
+_KNOWLEDGE_CACHE: dict = {}
 
 
 def _get_client():
@@ -31,16 +42,36 @@ def _get_client():
 
 
 def _load_json(filename: str) -> list | dict:
+    if filename in _KNOWLEDGE_CACHE:
+        return _KNOWLEDGE_CACHE[filename]
     path = KNOWLEDGE_DIR / filename
     if path.exists():
         try:
-            return json.loads(path.read_text(encoding="utf-8"))
+            data = json.loads(path.read_text(encoding="utf-8"))
+            _KNOWLEDGE_CACHE[filename] = data
+            return data
         except Exception:
             return []
     return []
 
 
-def _build_knowledge_context() -> str:
+def _current_season_hint() -> str:
+    """Return a brief farming-season context string based on current month."""
+    month = datetime.now().month
+    if month in (6, 7, 8):
+        return "अभी खरीफ बुवाई का मौसम है (जून-अगस्त)। धान, मक्का, कपास, सोयाबीन की बुवाई चल रही है।"
+    elif month in (9, 10):
+        return "खरीफ फसल की देखभाल का समय है। धान में बाली आ रही है।"
+    elif month in (11, 12):
+        return "रबी बुवाई का मौसम है (नवंबर-दिसंबर)। गेहूं, सरसों, चना की बुवाई चल रही है।"
+    elif month in (1, 2, 3):
+        return "रबी फसल की देखभाल का समय है। गेहूं में बाली आ रही है।"
+    elif month in (4, 5):
+        return "रबी कटाई और खरीफ की तैयारी का समय है (अप्रैल-मई)। गेहूं कट रहा है, धान के लिए खेत तैयार करें।"
+    return ""
+
+
+def _build_knowledge_context(district: str = "") -> str:
     """Build the verified knowledge section for the system prompt."""
     sections = []
 
@@ -116,75 +147,85 @@ def _build_knowledge_context() -> str:
                 lines.append(f"EMERGENCY signs: {signs}")
         sections.append("\n".join(lines))
 
-    # Referral map
-    referrals = _load_json("referrals.json")
-    if referrals:
-        lines = ["=== REFERRAL MAP (Roorkee-Haridwar Region) ==="]
-        for r in referrals:
+    # Referral map — district-aware
+    referrals_data = _load_json("referrals.json")
+    if referrals_data:
+        district_key = district.lower().strip() if district else ""
+        local_refs = referrals_data.get(district_key, []) if district_key else []
+        generic_refs = referrals_data.get("generic", [])
+        all_refs = local_refs + generic_refs if local_refs else generic_refs
+
+        district_label = f"({district.title()} जिला)" if district_key and local_refs else "(सामान्य हेल्पलाइन)"
+        lines = [f"=== REFERRAL MAP {district_label} ==="]
+        for r in all_refs:
             entry = f"- {r.get('name', 'Unknown')}"
             if r.get('type'):
                 entry += f" ({r['type']})"
             if r.get('address'):
                 entry += f" — {r['address']}"
             if r.get('phone'):
-                entry += f" | Phone: {r['phone']}"
+                entry += f" | फोन: {r['phone']}"
             if r.get('hours'):
-                entry += f" | Hours: {r['hours']}"
+                entry += f" | समय: {r['hours']}"
             lines.append(entry)
         sections.append("\n".join(lines))
 
     return "\n\n".join(sections)
 
 
-def _build_system_prompt(farmer_context: str = "") -> str:
+def _build_system_prompt(farmer_context: str = "", district: str = "") -> str:
     """Build the complete system prompt with all sections."""
-    knowledge = _build_knowledge_context()
+    knowledge = _build_knowledge_context(district=district)
+    season_hint = _current_season_hint()
+    current_month = datetime.now().strftime("%B %Y")
 
     prompt = f"""## Section 1 — Identity & Personality
-You are Samadhan Mitra (समाधान मित्र), a voice-first Hindi conversational assistant for Indian farmers.
+You are Samadhan Mitra (समाधान मित्र), a voice-first Hindi assistant for Indian farmers in Uttarakhand/UP.
 
 PERSONALITY:
-- You speak simple, warm Hindi (Khariboli dialect, Devanagari script)
-- Your tone is like a caring, knowledgeable neighbor — NOT a government officer or doctor
-- You are conservative with advice — always suggest confirming with local expert
-- You NEVER diagnose medically, NEVER guarantee scheme eligibility
-- Use the farmer's name when known
-- Keep responses SHORT: 2-4 sentences for simple queries, max 5-6 for complex ones
-- Always respond in Hindi (Devanagari script)
+- Speak warm, simple Hindi (Khariboli). Use "आप" for respect but keep sentences short and village-friendly.
+- Tone like a caring, knowledgeable neighbor — NOT a government officer, doctor, or textbook.
+- You are conservative with advice — always suggest confirming with local KVK/expert.
+- Use the farmer's name when known (e.g., "राम भाई,").
+- NEVER diagnose medically. NEVER guarantee scheme eligibility. NEVER fabricate data.
+
+RESPONSE LENGTH RULES (strictly follow):
+- Simple queries (one crop problem, one scheme name): MAX 60 words in Hindi.
+- Complex queries (multiple issues, detailed advice): MAX 100 words.
+- Always end with one short next step (e.g., "KVK से मिलें", "pmkisan.gov.in देखें").
+- NEVER write bullet-point lists — speak naturally like a conversation.
+
+CURRENT DATE & SEASON CONTEXT:
+- Today: {current_month}
+- {season_hint}
 
 ## Section 2 — Knowledge Tier Instructions
 
 TIER 1 — VERIFIED KNOWLEDGE (in the knowledge sections below):
-- Respond with confidence and specific details (chemical names, dosages, scheme criteria)
-- These are hand-verified against ICAR/KVK/government sources
+- Respond with confidence and specific details (chemical names, dosages, scheme criteria).
+- These are hand-verified against ICAR/KVK/government sources.
 
 TIER 2 — GENERAL KNOWLEDGE (topics within agriculture/health/schemes but NOT in Tier 1):
-- Provide general guidance and possible causes
-- NEVER give specific chemical names, dosages, or medicine names
-- ALWAYS prefix with "yeh meri aam samajh hai, apne Krishi Kendra/doctor se zaroor confirm karein"
-- Offer to help further if they send a photo
-- Provide the relevant referral (KVK number, sub-center location, etc.)
+- Provide general guidance and possible causes.
+- NEVER give specific chemical names, dosages, or medicine names.
+- ALWAYS prefix with: "मेरी जानकारी के अनुसार — लेकिन अपने कृषि केंद्र/डॉक्टर से ज़रूर पूछें।"
+- Offer to help further if they send a photo.
 
 TIER 3 — OUT OF SCOPE (legal disputes, land records, police, financial investment, etc.):
-- Warm acknowledgment + specific redirect with contact information
-- "Yeh mere expertise se bahar hai, lekin aapke Block Development Officer isse help kar sakte hain."
-
-CRITICAL RULES:
-- NEVER fabricate information. NEVER make up scheme names, chemical names, or dosages.
-- For health: NEVER diagnose. NEVER prescribe medicines except basic Paracetamol/ORS.
-- For health: Always give one safe immediate action, state when to seek help, name facility type.
+- Warm acknowledgment + specific redirect.
+- "यह मेरी जानकारी से बाहर है, लेकिन आपके Block Development Officer इसमें मदद कर सकते हैं।"
 
 ## Section 3 — Verified Knowledge
 
 {knowledge}
 
-## Section 4 — Profile Extraction
+## Section 4 — Profile Extraction (CRITICAL FORMAT RULE)
 
-After EVERY response, you MUST output structured JSON inside <profile_update> tags.
-This JSON must NEVER appear in the user-facing conversational response.
-The <profile_update> block should come AFTER your Hindi response, separated clearly.
+IMPORTANT: The <profile_update> block MUST appear AFTER your Hindi response on a NEW LINE.
+It must NEVER be part of the conversational text the farmer sees.
+Do NOT wrap it in markdown code blocks.
 
-Format:
+Format (always output this after every response):
 <profile_update>
 {{
   "domain": "agriculture|health|schemes|general",
@@ -197,35 +238,34 @@ Format:
     "action_taken": null,
     "location_mentioned": null
   }},
-  "session_summary_update": "one line describing this exchange in English",
+  "name": null,
+  "village": null,
+  "district": null,
+  "session_summary_update": "one English sentence describing this exchange",
   "flags": []
 }}
 </profile_update>
 
-Rules for profile_update:
-- Only include fields that were actually mentioned in THIS conversation turn
-- Set fields to null if not mentioned
-- "flags" can include: "upcoming_deadline", "unresolved_problem", "emergency", "follow_up_needed"
-- "session_summary_update" should be a brief English summary of what was discussed
-- "domain" should be the PRIMARY domain of this exchange
+Rules:
+- Only include fields actually mentioned in this turn; set others to null.
+- "flags" options: "upcoming_deadline", "unresolved_problem", "emergency", "follow_up_needed"
+- Extract name/village/district if the farmer mentions them naturally.
 
 ## Section 5 — Conversation History
 
-- Previous messages are provided as chat history
-- Use them to resolve pronouns ("iske", "woh", "us")
-- If session summaries are provided in the context, use them for cross-session continuity
-- Maintain topic continuity unless the farmer explicitly changes subject
+- Previous messages are provided as chat history.
+- Use them to resolve pronouns ("इसमें", "उस फसल में", "वो दवाई").
+- Maintain topic continuity unless farmer changes subject.
 
 ## Section 6 — Multi-Topic Handling
 
-If the farmer mentions multiple domains in ONE message:
-- Address each domain naturally in sequence (the order they mentioned them)
-- Each domain response should be 1-2 sentences, connected naturally
-- Output a single <profile_update> with the PRIMARY domain
+If farmer mentions multiple domains:
+- Address each domain in 1-2 sentences, connected naturally.
+- Single <profile_update> with the PRIMARY domain.
 
 ## Section 7 — Farmer Context
 
-{farmer_context if farmer_context else "No previous context available for this farmer."}
+{farmer_context if farmer_context else "नया किसान — पहली बातचीत।"}
 """
     return prompt
 
@@ -235,23 +275,34 @@ def _parse_profile_update(response_text: str) -> tuple[str, dict | None]:
     Separate the conversational response from the <profile_update> JSON block.
     Returns (clean_response, profile_update_dict).
     """
-    # Extract content between <profile_update> tags
     pattern = r'<profile_update>\s*(.*?)\s*</profile_update>'
     match = re.search(pattern, response_text, re.DOTALL)
 
     if match:
         json_str = match.group(1).strip()
-        # Remove the profile_update block from the response
         clean_response = re.sub(pattern, '', response_text, flags=re.DOTALL).strip()
 
         try:
             profile_update = json.loads(json_str)
             return clean_response, profile_update
         except json.JSONDecodeError as e:
-            print(f"[Profile update parse error] {e}")
+            log.warning(f"[Profile update parse error] {e}")
             return clean_response, None
     else:
         return response_text.strip(), None
+
+
+def _call_model(client, model: str, contents, system_prompt: str, max_tokens: int = 1024) -> str:
+    """Call a specific Gemini model and return raw text."""
+    response = client.models.generate_content(
+        model=model,
+        contents=contents,
+        config=types.GenerateContentConfig(
+            system_instruction=system_prompt,
+            max_output_tokens=max_tokens,
+        ),
+    )
+    return response.text.strip()
 
 
 def chat(text: str, profile: dict, image_b64: str = None) -> dict:
@@ -262,7 +313,7 @@ def chat(text: str, profile: dict, image_b64: str = None) -> dict:
         {
             "response": str,  # Hindi conversational response
             "domain": str,    # agriculture|health|schemes|general
-            "profile_update": dict | None,  # extracted profile data
+            "profile_update": dict | None,
         }
     """
     import time
@@ -270,9 +321,10 @@ def chat(text: str, profile: dict, image_b64: str = None) -> dict:
 
     client = _get_client()
     farmer_context = get_context_for_prompt(profile)
-    system_prompt = _build_system_prompt(farmer_context)
+    district = profile.get("district", "") or ""
+    system_prompt = _build_system_prompt(farmer_context, district=district)
 
-    # Build chat history as text context (most compatible approach)
+    # Build chat history as context
     chat_messages = get_chat_history(profile)
     history_text = ""
     if chat_messages:
@@ -280,9 +332,8 @@ def chat(text: str, profile: dict, image_b64: str = None) -> dict:
         for msg in chat_messages:
             speaker = "Farmer" if msg["role"] == "user" else "Samadhan"
             history_lines.append(f"{speaker}: {msg['text']}")
-        history_text = "\n\nRecent messages in this session:\n" + "\n".join(history_lines[-10:])
+        history_text = "\n\nRecent conversation:\n" + "\n".join(history_lines[-10:])
 
-    # Build the full user message with history context
     full_message = f"{history_text}\n\nFarmer (new message): {text}" if history_text else text
 
     # Build content parts
@@ -290,7 +341,6 @@ def chat(text: str, profile: dict, image_b64: str = None) -> dict:
     if image_b64:
         try:
             img_bytes = base64.b64decode(image_b64)
-            # Detect mime type
             mime = "image/jpeg"
             if image_b64[:8].startswith("iVBOR"):
                 mime = "image/png"
@@ -298,90 +348,93 @@ def chat(text: str, profile: dict, image_b64: str = None) -> dict:
                 mime = "image/webp"
             contents.append(types.Part.from_bytes(data=img_bytes, mime_type=mime))
         except Exception as e:
-            print(f"[Image decode error] {e}")
+            log.warning(f"[Image decode error] {e}")
 
     contents.append(full_message)
 
-    max_retries = 3
-    retry_delay = 1
+    # Model cascade: PRIMARY → FALLBACK
+    models_to_try = [PRIMARY_MODEL, FALLBACK_MODEL]
+    last_err = None
 
-    for attempt in range(max_retries):
-        try:
-            # Single Gemini call with system prompt + message
-            gemini_chat = client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=contents,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_prompt,
-                    max_output_tokens=2048,
-                ),
-            )
+    for model in models_to_try:
+        for attempt in range(2):  # 2 attempts per model
+            try:
+                raw_response = _call_model(client, model, contents, system_prompt, max_tokens=1024)
+                clean_response, profile_update = _parse_profile_update(raw_response)
 
-            raw_response = gemini_chat.text.strip()
-            clean_response, profile_update = _parse_profile_update(raw_response)
+                domain = "general"
+                if profile_update:
+                    domain = profile_update.get("domain", "general")
 
-            domain = "general"
-            if profile_update:
-                domain = profile_update.get("domain", "general")
+                log.info(f"[Gemini] model={model} domain={domain} chars={len(clean_response)}")
+                return {
+                    "response": clean_response,
+                    "domain": domain,
+                    "profile_update": profile_update,
+                }
 
-            return {
-                "response": clean_response,
-                "domain": domain,
-                "profile_update": profile_update,
-            }
+            except Exception as e:
+                last_err = str(e)
+                log.warning(f"[Gemini] model={model} attempt={attempt+1} error: {last_err[:120]}")
 
-        except Exception as e:
-            err_str = str(e)
-            print(f"[Gemini attempt {attempt+1} error] {err_str}")
-            
-            # If 503 (high demand) or 429 (quota), retry unless it's the last attempt
-            if ("503" in err_str or "429" in err_str) and attempt < max_retries - 1:
-                time.sleep(retry_delay)
-                retry_delay *= 2  # Exponential backoff
-                continue
-                
-            return {
-                "response": "माफ करें, अभी सर्वर पर लोड ज्यादा है। कृपया 10 सेकंड बाद दोबारा कोशिश करें।",
-                "domain": "general",
-                "profile_update": None,
-            }
+                if "429" in last_err:
+                    # Quota hit — don't retry same model, move to next model
+                    break
+                elif "503" in last_err or "500" in last_err:
+                    # Server overload — brief wait then retry
+                    time.sleep(1.5 * (attempt + 1))
+                    continue
+                else:
+                    break
+
+    # All models failed — return contextual fallback
+    if last_err and "429" in last_err:
+        fallback_msg = "अभी बहुत सारे लोग पूछ रहे हैं, थोड़ी देर बाद कोशिश करें।"
+    elif last_err and any(x in last_err for x in ["503", "timeout", "connection"]):
+        fallback_msg = "नेटवर्क में दिक्कत है, कृपया दोबारा कोशिश करें।"
+    else:
+        fallback_msg = "कुछ तकनीकी गड़बड़ी हुई। थोड़ी देर बाद पूछें।"
+
+    log.error(f"[Gemini] All models failed. last_err={last_err[:200] if last_err else 'unknown'}")
+    return {
+        "response": fallback_msg,
+        "domain": "general",
+        "profile_update": None,
+    }
 
 
 def generate_greeting(profile: dict) -> str:
-    """
-    Generate a proactive greeting for the farmer based on their profile.
-    This is the Layer 4 — Perceived Memory feature.
-    """
+    """Generate a proactive greeting based on farmer profile."""
     from utils.profile_manager import get_context_for_prompt
 
     client = _get_client()
     farmer_context = get_context_for_prompt(profile)
     name = profile.get("name", "किसान भाई")
 
-    prompt = f"""Given this farmer's profile and recent session summaries, generate a warm, brief Hindi greeting (in Devanagari script) that:
+    prompt = f"""Given this farmer's profile, generate a warm Hindi greeting (Devanagari script) that:
 1. Addresses the farmer by name if known
-2. References their most recent interaction naturally
+2. References their most recent interaction naturally (1 line)
 3. Follows up on any unresolved problem
-4. Mentions any upcoming deadline from their profile
-Keep it to 2-3 sentences MAX. Speak like a caring neighbor checking in.
-Do NOT include any JSON or profile_update tags. Only the greeting.
+4. Mentions any upcoming deadline
+
+Keep it to 2-3 sentences MAX. Speak like a caring neighbor. Do NOT include any JSON or tags.
 
 Farmer context:
-{farmer_context if farmer_context else f"New farmer, no previous interactions. Just welcome {name} warmly."}
+{farmer_context if farmer_context else f"New farmer. Welcome {name} warmly in Hindi."}
 """
 
-    try:
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                max_output_tokens=256,
-            ),
-        )
-        return response.text.strip()
-    except Exception as e:
-        print(f"[Greeting error] {e}")
-        return f"नमस्ते {name}! समाधान मित्र में आपका स्वागत है। आज मैं आपकी क्या मदद कर सकता हूँ?"
+    for model in [PRIMARY_MODEL, FALLBACK_MODEL]:
+        try:
+            response = client.models.generate_content(
+                model=model,
+                contents=prompt,
+                config=types.GenerateContentConfig(max_output_tokens=200),
+            )
+            return response.text.strip()
+        except Exception as e:
+            log.warning(f"[Greeting] model={model} error: {e}")
+
+    return f"नमस्ते {name}! समाधान मित्र में आपका स्वागत है। आज मैं आपकी क्या मदद कर सकता हूँ?"
 
 
 def generate_session_summary(messages: list) -> str:
@@ -393,29 +446,26 @@ def generate_session_summary(messages: list) -> str:
         for m in messages[:10]
     ])
 
-    prompt = f"""Summarize this farmer conversation in one English line for future reference. Be concise and factual.
+    prompt = f"""Summarize this farmer conversation in one English sentence for future reference. Be concise and factual.
 
 {msg_text}"""
 
-    try:
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                max_output_tokens=100,
-            ),
-        )
-        return response.text.strip()
-    except Exception as e:
-        print(f"[Summary error] {e}")
-        return "Session completed."
+    for model in [PRIMARY_MODEL, FALLBACK_MODEL]:
+        try:
+            response = client.models.generate_content(
+                model=model,
+                contents=prompt,
+                config=types.GenerateContentConfig(max_output_tokens=100),
+            )
+            return response.text.strip()
+        except Exception as e:
+            log.warning(f"[Summary] model={model} error: {e}")
+
+    return "Session completed."
 
 
 def generate_partner_summary(profile: dict) -> str:
-    """
-    Generate a one-paragraph summary for the partner view.
-    Written in simple Hindi for ASHA workers / Krishi officers.
-    """
+    """Generate a one-paragraph Hindi summary for partner/ASHA worker view."""
     from utils.profile_manager import get_context_for_prompt
 
     client = _get_client()
@@ -424,37 +474,34 @@ def generate_partner_summary(profile: dict) -> str:
     timeline = profile.get("timeline", [])
     timeline_text = ""
     if timeline:
-        entries = []
-        for t in timeline[:10]:
-            entries.append(f"- {t.get('date', '?')} [{t.get('domain', '?')}]: {t.get('summary', '')} (Status: {t.get('status', '?')})")
+        entries = [
+            f"- {t.get('date', '?')} [{t.get('domain', '?')}]: {t.get('summary', '')} (Status: {t.get('status', '?')})"
+            for t in timeline[:10]
+        ]
         timeline_text = "\n".join(entries)
 
     flags = profile.get("flags", [])
     flags_text = ", ".join(flags) if flags else "None"
 
-    prompt = f"""Given this farmer's profile and timeline, generate a one-paragraph summary in simple Hindi (Devanagari) that an ASHA worker would find useful before visiting the family.
+    prompt = f"""Given this farmer's profile, generate a one-paragraph summary in simple Hindi (Devanagari) useful for an ASHA worker before a home visit. Include: who the farmer is, recent problems, unresolved issues, upcoming deadlines, schemes status. Do NOT include JSON or tags.
 
-Do NOT include any JSON or tags. Only the Hindi summary paragraph.
-
-Profile context:
+Profile:
 {farmer_context}
 
 Timeline:
-{timeline_text if timeline_text else "No timeline entries."}
+{timeline_text if timeline_text else "No timeline."}
 
-Active flags: {flags_text}
+Active flags: {flags_text}"""
 
-Write a concise, practical summary paragraph in Hindi. Include: who the farmer is, recent problems, any unresolved issues, upcoming deadlines, and schemes status."""
+    for model in [PRIMARY_MODEL, FALLBACK_MODEL]:
+        try:
+            response = client.models.generate_content(
+                model=model,
+                contents=prompt,
+                config=types.GenerateContentConfig(max_output_tokens=300),
+            )
+            return response.text.strip()
+        except Exception as e:
+            log.warning(f"[PartnerSummary] model={model} error: {e}")
 
-    try:
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                max_output_tokens=300,
-            ),
-        )
-        return response.text.strip()
-    except Exception as e:
-        print(f"[Partner summary error] {e}")
-        return "सारांश उपलब्ध नहीं है।"
+    return "सारांश उपलब्ध नहीं है।"

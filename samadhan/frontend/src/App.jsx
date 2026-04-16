@@ -1,10 +1,34 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import FarmerChat from "./pages/FarmerChat.jsx";
 import PartnerView from "./pages/PartnerView.jsx";
+import ErrorBoundary from "./components/ErrorBoundary.jsx";
+
+function useApiStatus() {
+  const [status, setStatus] = useState("ok"); // "ok" | "slow" | "offline"
+  useEffect(() => {
+    const check = async () => {
+      const t0 = Date.now();
+      try {
+        const res = await fetch("/api/health", { signal: AbortSignal.timeout(5000) });
+        const ms = Date.now() - t0;
+        setStatus(res.ok ? (ms > 2000 ? "slow" : "ok") : "offline");
+      } catch {
+        setStatus("offline");
+      }
+    };
+    check();
+    const id = setInterval(check, 30000);
+    return () => clearInterval(id);
+  }, []);
+  return status;
+}
 
 function NavBar() {
   const { pathname } = useLocation();
+  const apiStatus = useApiStatus();
+  const statusColor = { ok: "#4caf50", slow: "#ff9800", offline: "#f44336" }[apiStatus];
+  const statusLabel = { ok: "ऑनलाइन", slow: "धीमा", offline: "ऑफलाइन" }[apiStatus];
 
   return (
     <nav style={navStyle}>
@@ -23,6 +47,10 @@ function NavBar() {
         }}>
           मित्र
         </span>
+        <span title={statusLabel} style={{
+          width: 8, height: 8, borderRadius: "50%", background: statusColor,
+          display: "inline-block", boxShadow: `0 0 5px ${statusColor}`, marginLeft: 4,
+        }} />
       </div>
 
       <div style={{ display: "flex", gap: 6 }}>
@@ -43,8 +71,8 @@ export default function App() {
       <NavBar />
       <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <Routes>
-          <Route path="/" element={<FarmerChat />} />
-          <Route path="/partner" element={<PartnerView />} />
+          <Route path="/" element={<ErrorBoundary><FarmerChat /></ErrorBoundary>} />
+          <Route path="/partner" element={<ErrorBoundary><PartnerView /></ErrorBoundary>} />
         </Routes>
       </main>
     </div>

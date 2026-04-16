@@ -405,5 +405,199 @@
     "prevention": "Soil Health Card के अनुसार खाद दें। दलहन के बाद मक्का लगाएं।",
     "escalation": "मिट्टी जांच करवाएं।",
     "source": "ICAR"
+  },
+
+  {
+    "crop": "onion",
+    "problem": "purple_blotch",
+    "local_names": ["बैंगनी धब्बा", "purple blotch", "प्याज झुलसा"],
+    "symptoms": "पत्तियों और तने पर सफेद-बैंगनी धब्बे जो बाद में भूरे हो जाते हैं, पत्तियां मुड़ना और गिरना।",
+    "cause": "Alternaria porri फफूंद — नमी, ओस और 25-30°C तापमान में तेजी से फैलता है।",
+    "treatment": "Mancozeb 75 WP — 2.5 ग्राम/लीटर या Iprodione 50 WP — 2 ग्राम/लीटर। 7-10 दिन में दोहराएं।",
+    "prevention": "Trichoderma बीज उपचार करें। पौधों में दूरी रखें। सिंचाई सुबह करें ताकि रात को पत्तियां सूखी रहें।",
+    "escalation": "40% से ज्यादा पत्तियां प्रभावित हों तो KVK से संपर्क करें।",
+    "source": "ICAR-NHRDF Nashik"
+  },
+  {
+    "crop": "onion",
+    "problem": "thrips",
+    "local_names": ["थ्रिप्स", "प्याज का माहू", "लीची कीड़ा"],
+    "symptoms": "पत्तियों पर चांदी जैसी धारियां, पत्तियां मुड़ना और सूखना, नए पत्ते विकृत।",
+    "cause": "Thrips tabaci — गर्म शुष्क मौसम में तेजी से बढ़ता है।",
+    "treatment": "Spinosad 45 SC — 0.3 मिली/लीटर या Fipronil 5 SC — 2 मिली/लीटर। 10 दिन बाद दोहराएं।",
+    "prevention": "नीले चिपकने वाले जाल लगाएं। प्याज के साथ धनिया लगाएं। नीम तेल (5 मिली/लीटर) रोकथाम में।",
+    "escalation": "प्रति पौधा 20 से ज्यादा थ्रिप्स हों तो KVK मार्गदर्शन लें।",
+    "source": "ICAR-NHRDF"
+  },
+  {
+    "crop": "onion",
+    "problem": "neck_rot",
+    "local_names": ["गर्दन सड़न", "neck rot", "भंडारण सड़न"],
+    "symptoms": "भंडारण में कंद की गर्दन के पास नरम भूरा सड़न, ग्रे फफूंद, बदबू।",
+    "cause": "Botrytis allii फफूंद — कटाई के समय नमी से शुरू होता है।",
+    "treatment": "प्रभावित कंद हटाएं। भंडारण में हवा का आवागमन बढ़ाएं। गर्म हवा से सुखाएं।",
+    "prevention": "कटाई से पहले 10 दिन सिंचाई बंद करें। Mancozeb 2.5 ग्राम/लीटर का कटाई से पहले स्प्रे। सही तरीके से सुखाएं (curing)।",
+    "escalation": "भंडारण में 10% से ज्यादा नुकसान हो तो कृषि विभाग से संपर्क करें।",
+    "source": "ICAR-NHRDF"
+  },
+
+  {
+    "crop": "chili",
+    "problem": "anthracnose_fruit_rot",
+    "local_names": ["मिर्च सड़न", "anthracnose", "कोलेटोट्राइकम"],
+    "symptoms": "फलों पर काले-भूरे गोल धब्बे, धब्बे सूखकर अंदर धंस जाते हैं, फल गल जाता है।",
+    "cause": "Colletotrichum capsici फफूंद — गर्म नम मौसम में फल पकने के समय।",
+    "treatment": "Mancozeb 75 WP — 2.5 ग्राम/लीटर + Copper Oxychloride — 3 ग्राम/लीटर मिलाकर स्प्रे। 7-10 दिन में दोहराएं।",
+    "prevention": "स्वस्थ बीज से नर्सरी। फसल चक्र अपनाएं। प्रभावित फल इकट्ठा करके नष्ट करें।",
+    "escalation": "20% से ज्यादा फल प्रभावित हों तो KVK से संपर्क।",
+    "source": "IIVR Varanasi"
+  },
+  {
+    "crop": "chili",
+    "problem": "leaf_curl",
+    "local_names": ["पत्ती मोड़ रोग", "leaf curl"],
+    "symptoms": "पत्तियां ऊपर-नीचे मुड़ना, पौधा छोटा, फूल और फल कम, पत्तियां मोटी।",
+    "cause": "थ्रिप्स या माइट से फैला Chili Leaf Curl Virus।",
+    "treatment": "वायरस का इलाज नहीं। प्रभावित पौधे उखाड़ें। Dimethoate 30 EC — 2 मिली/लीटर (थ्रिप्स नियंत्रण)।",
+    "prevention": "नर्सरी में नेट। पीले-नीले जाल। प्रतिरोधी किस्में। नीम तेल (5 मिली/लीटर) रोकथाम में।",
+    "escalation": "30% से ज्यादा पौधे प्रभावित हों तो KVK।",
+    "source": "ICAR-IIVR"
+  },
+
+  {
+    "crop": "chickpea",
+    "problem": "wilt",
+    "local_names": ["उकठा", "चना उकठा", "Fusarium wilt"],
+    "symptoms": "पौधा अचानक मुरझाना, जड़ें सड़ी-काली, एक ओर से सूखना, पत्तियां पीली।",
+    "cause": "Fusarium oxysporum f. sp. ciceris — मिट्टी जनित फफूंद, 25-30°C में।",
+    "treatment": "कोई रासायनिक इलाज नहीं। प्रभावित पौधे उखाड़ें। बीज उपचार Carbendazim 2 ग्राम/किलो।",
+    "prevention": "प्रतिरोधी किस्में (JG-74, Pusa 362)। Trichoderma 5 ग्राम/किलो बीज उपचार। 3-4 साल फसल चक्र।",
+    "escalation": "लगातार हर साल समस्या हो तो KVK से मिट्टी उपचार की सलाह लें।",
+    "source": "ICAR-IIPR Kanpur"
+  },
+  {
+    "crop": "chickpea",
+    "problem": "pod_borer",
+    "local_names": ["फली छेदक", "हेलिकोवर्पा"],
+    "symptoms": "फलियों में गोल छेद, कीड़ा फल खाता है, दाने आधे खाए।",
+    "cause": "Helicoverpa armigera — फली बनने के समय, जनवरी-मार्च।",
+    "treatment": "Emamectin Benzoate 5 SG — 0.4 ग्राम/लीटर या Chlorantraniliprole 18.5 SC — 0.3 मिली/लीटर।",
+    "prevention": "फेरोमोन ट्रैप (2-3 प्रति एकड़)। पक्षी बसेरा। NSKE 5% स्प्रे। HaNPV वायरस का उपयोग।",
+    "escalation": "2 से ज्यादा कीड़े प्रति पौधा हों तो KVK से IPM सलाह।",
+    "source": "ICAR-IIPR"
+  },
+  {
+    "crop": "chickpea",
+    "problem": "ascochyta_blight",
+    "local_names": ["झुलसा", "असकोकाइटा"],
+    "symptoms": "पत्तियों, तने और फलियों पर भूरे गोल धब्बे जिनमें काले केंद्र होते हैं।",
+    "cause": "Ascochyta rabiei फफूंद — ठंडे नम मौसम में, नवंबर-फरवरी।",
+    "treatment": "Mancozeb 75 WP — 2.5 ग्राम/लीटर। Iprodione 50 WP — 2 ग्राम/लीटर। 10 दिन में दोहराएं।",
+    "prevention": "बीज उपचार Thiram + Carbendazim। प्रमाणित रोग-मुक्त बीज। फसल चक्र।",
+    "escalation": "गंभीर प्रकोप में KVK से संपर्क।",
+    "source": "ICAR-IIPR"
+  },
+
+  {
+    "crop": "cotton",
+    "problem": "pink_bollworm",
+    "local_names": ["गुलाबी सुंडी", "pink bollworm"],
+    "symptoms": "बंद फूल (rosette), टिंडे में गोल छेद, दाना खाया हुआ, रेशे में गुलाबी लार्वा।",
+    "cause": "Pectinophora gossypiella — टिंडे बनने के समय।",
+    "treatment": "Spinosad 45 SC — 0.3 मिली/लीटर या Emamectin Benzoate 5 SG — 0.4 ग्राम/लीटर।",
+    "prevention": "फेरोमोन ट्रैप (5 प्रति एकड़)। Bt कपास लगाएं। फसल अवशेष जलाएं। अक्टूबर के बाद कपास न लगाएं।",
+    "escalation": "8% से ज्यादा टिंडे प्रभावित हों तो कृषि विभाग को सूचित करें।",
+    "source": "CICR Nagpur"
+  },
+  {
+    "crop": "cotton",
+    "problem": "whitefly_begomovirus",
+    "local_names": ["सफेद मक्खी", "पत्ती मोड़ रोग"],
+    "symptoms": "पत्तियां ऊपर मुड़ना, पत्तियां मोटी-चमकदार, पौधा बौना, टिंडे कम।",
+    "cause": "Bemisia tabaci (सफेद मक्खी) से CLCuD वायरस फैलता है।",
+    "treatment": "वायरस का इलाज नहीं। Diafenthiuron 50 WP — 1 ग्राम/लीटर (सफेद मक्खी)। प्रभावित पत्तियां हटाएं।",
+    "prevention": "Imidacloprid बीज उपचार। पीले जाल। Neem oil 5 मिली/लीटर। Imidacloprid का ज्यादा उपयोग न करें (resistance)।",
+    "escalation": "10% से ज्यादा पत्तियां प्रभावित हों तो KVK।",
+    "source": "ICAR-CICR"
+  },
+
+  {
+    "crop": "rice",
+    "problem": "false_smut",
+    "local_names": ["कृत्रिम कंड", "false smut", "हरा कंड"],
+    "symptoms": "दानों की जगह हरे-काले पाउडर के गोले, एक बाली में 1-4 दाने प्रभावित।",
+    "cause": "Ustilaginoidea virens फफूंद — बाली निकलने के समय नमी से।",
+    "treatment": "Propiconazole 25 EC — 1 मिली/लीटर या Tebuconazole 25.9 EC — 1 मिली/लीटर। बाली निकलने पर स्प्रे।",
+    "prevention": "प्रतिरोधी किस्में। नाइट्रोजन अधिक न दें। खेत में जल निकासी बनाए रखें।",
+    "escalation": "गंभीर प्रकोप में KVK से संपर्क।",
+    "source": "ICAR-IRRI"
+  },
+  {
+    "crop": "rice",
+    "problem": "bacterial_leaf_blight",
+    "local_names": ["जीवाणु पत्ती अंगमारी", "BLB", "kresek"],
+    "symptoms": "पत्तियों के किनारे पीले-सफेद होना, लहरदार पीलापन, पत्ती सूखना, कीचड़ जैसा द्रव।",
+    "cause": "Xanthomonas oryzae pv. oryzae बैक्टीरिया — बाढ़ और तेज हवा से फैलता है।",
+    "treatment": "Copper Oxychloride — 3 ग्राम/लीटर या Bactericide Streptomycin + Copper — 0.5 ग्राम/लीटर।",
+    "prevention": "प्रतिरोधी किस्में (IR-36, Swarnadhan)। नाइट्रोजन कम करें। खेत में पानी नियंत्रित रखें।",
+    "escalation": "50% से ज्यादा पत्तियां प्रभावित हों तो KVK।",
+    "source": "ICAR-NRRI Cuttack"
+  },
+  {
+    "crop": "rice",
+    "problem": "zinc_deficiency",
+    "local_names": ["खैरा रोग", "khaira", "जिंक की कमी"],
+    "symptoms": "रोपाई के 2-4 हफ्ते बाद पत्तियों पर हल्के भूरे-नारंगी धब्बे, पत्तियां मुड़ना, पौधा छोटा रहना।",
+    "cause": "मिट्टी में जिंक की कमी — क्षारीय या बाढ़ वाली मिट्टी में।",
+    "treatment": "Zinc Sulphate 21% — 25 किग्रा/हेक्टेयर मिट्टी में मिलाएं। या 0.5% Zinc Sulphate + 0.25% Slaked Lime का पर्णीय छिड़काव।",
+    "prevention": "रोपाई से पहले Zinc Sulphate 25 किग्रा/हेक्टेयर। हर 3 साल में मिट्टी जांच।",
+    "escalation": "खेत में जगह-जगह समस्या हो तो KVK से मिट्टी जांच करवाएं।",
+    "source": "ICAR-IRRI"
+  },
+
+  {
+    "crop": "mango",
+    "problem": "powdery_mildew",
+    "local_names": ["खर्रा", "चूर्णिल रोग", "safed chur"],
+    "symptoms": "मंजर (बौर) और पत्तियों पर सफेद पाउडर जैसी परत, मंजर झड़ना, फल नहीं लगना।",
+    "cause": "Oidium mangiferae फफूंद — फरवरी-मार्च में ठंडी हवा और नमी में।",
+    "treatment": "Wettable Sulphur 80 WP — 3 ग्राम/लीटर या Hexaconazole 5 EC — 2 मिली/लीटर। मंजर निकलते समय स्प्रे।",
+    "prevention": "पहले से Wettable Sulphur छिड़काव। बगीचे में हवा का आवागमन बनाए रखें।",
+    "escalation": "50% से ज्यादा बौर प्रभावित हों तो KVK या बागवानी विभाग से संपर्क।",
+    "source": "ICAR-CISH Lucknow"
+  },
+  {
+    "crop": "mango",
+    "problem": "mealybug",
+    "local_names": ["शल्क कीट", "mealybug", "आम का मीलीबग"],
+    "symptoms": "नए पत्तों और फलों पर सफेद रुई जैसे कीड़े, चिपचिपा पदार्थ, काली फफूंद (sooty mould)।",
+    "cause": "Drosicha mangiferae — जनवरी-मई, पेड़ की छाल से ऊपर चढ़ते हैं।",
+    "treatment": "जनवरी में तने पर Chlorpyrifos-impregnated पॉलिथीन बांधें (sticky band)। Dimethoate 2 मिली/लीटर छिड़काव।",
+    "prevention": "दिसंबर में पेड़ के आसपास गहरी खुदाई करें। तना पट्टी जनवरी से पहले लगाएं।",
+    "escalation": "पूरे बगीचे में फैले तो KVK से संपर्क।",
+    "source": "ICAR-CISH"
+  },
+
+  {
+    "crop": "general",
+    "problem": "waterlogging",
+    "local_names": ["जलभराव", "खेत में पानी भरना", "पोखर"],
+    "symptoms": "पौधे पीले-मुरझाए, जड़ें काली-सड़ी, पत्तियां गिरना, फसल मर रही है।",
+    "cause": "अधिक बारिश, नाली बंद, मिट्टी में पानी रुकना।",
+    "treatment": "तुरंत नाली बनाकर पानी निकालें। खेत के बाहर मोड़ें। सुधरने के बाद Trichoderma + Zinc Sulphate डालें।",
+    "prevention": "बुवाई से पहले खेत में नाली बनाएं। मेड़ (ridge) पर बुवाई करें। मिट्टी में गोबर खाद डालें।",
+    "escalation": "2 दिन से ज्यादा पानी न निकले तो ग्राम प्रधान या BDO को सूचित करें।",
+    "source": "State Agriculture Dept"
+  },
+  {
+    "crop": "general",
+    "problem": "heat_stress",
+    "local_names": ["गर्मी का असर", "लू", "ताप तनाव"],
+    "symptoms": "पत्तियां मुड़ना, किनारे जलना (leaf scorch), फूल झड़ना, फल पकने से पहले गिरना।",
+    "cause": "45°C से ज्यादा तापमान, खासकर मई-जून। लू (hot dry wind)।",
+    "treatment": "तुरंत हल्की सिंचाई करें। Kaolin clay 5% या Wettable Sulphur 3 ग्राम/लीटर पर्णीय छिड़काव। शाम को सिंचाई।",
+    "prevention": "मल्चिंग (पुआल 5 सेमी)। सिंचाई सुबह या शाम करें। Drip irrigation लगाएं।",
+    "escalation": "पूरी फसल प्रभावित हो तो PMFBY में बीमा क्लेम करें।",
+    "source": "ICAR Advisory"
   }
 ]

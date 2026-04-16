@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  backend:
+    build: ./samadhan/backend
+    container_name: samadhan_backend
+    env_file: ./samadhan/backend/.env
+    volumes:
+      - ./samadhan/backend/samadhan.db:/app/samadhan.db
+    ports:
+      - "5001:5001"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build: ./samadhan/frontend
+    container_name: samadhan_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped

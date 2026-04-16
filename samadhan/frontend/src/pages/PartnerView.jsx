@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 
 const API_BASE = "/api";
+const PARTNER_HEADERS = { "X-Partner-Token": "samadhan2026" };
 
 // Domain color mapping
 const DOMAIN_COLORS = {
@@ -85,7 +86,36 @@ function FlagItem({ flag }) {
   );
 }
 
-function ProfileCard({ profile, summary, summaryLoading }) {
+function AggregateStats({ timeline, flags }) {
+  const agCount = timeline.filter((e) => e.domain === "agriculture").length;
+  const healthCount = timeline.filter((e) => e.domain === "health").length;
+  const schemesCount = timeline.filter((e) => e.domain === "schemes").length;
+  const resolvedCount = timeline.filter((e) => e.status === "resolved").length;
+
+  return (
+    <div style={{
+      display: "flex", gap: 10, flexWrap: "wrap",
+      background: "#fff", borderRadius: 14, padding: "14px 20px",
+      boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+    }}>
+      {[
+        { icon: "🌾", label: "कृषि", count: agCount, color: "#2e7d32" },
+        { icon: "🏥", label: "स्वास्थ्य", count: healthCount, color: "#1565c0" },
+        { icon: "📋", label: "योजना", count: schemesCount, color: "#e65100" },
+        { icon: "✅", label: "हल", count: resolvedCount, color: "#388e3c" },
+        { icon: "🚨", label: "अलर्ट", count: flags.length, color: "#c62828" },
+      ].map(({ icon, label, count, color }) => (
+        <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 20, background: "#f5f5f5" }}>
+          <span style={{ fontSize: "1rem" }}>{icon}</span>
+          <span style={{ fontSize: "0.78rem", color: "#888" }}>{label}</span>
+          <span style={{ fontWeight: 700, color, fontSize: "1rem" }}>{count}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ProfileCard({ profile, summary, summaryLoading, onFlag, flagged }) {
   const p = profile.profile || {};
   const ag = p.agriculture || {};
   const health = p.health || {};
@@ -110,7 +140,7 @@ function ProfileCard({ profile, summary, summaryLoading }) {
           }}>
             👨‍🌾
           </div>
-          <div>
+          <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 800, fontSize: "1.3rem" }}>
               {profile.name || profile.phone}
             </div>
@@ -121,8 +151,23 @@ function ProfileCard({ profile, summary, summaryLoading }) {
               पंजीकृत: {profile.registered_date || "—"}
             </div>
           </div>
+          <button
+            onClick={onFlag}
+            style={{
+              background: flagged ? "#e8f5e9" : "rgba(255,255,255,0.15)",
+              border: "none", borderRadius: 10, padding: "8px 14px",
+              color: flagged ? "#2e7d32" : "#fff", cursor: "pointer",
+              fontWeight: 700, fontSize: "0.82rem", whiteSpace: "nowrap",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
+            }}
+          >
+            {flagged ? "✅ फ्लैग किया" : "🚩 फॉलो-अप फ्लैग"}
+          </button>
         </div>
       </div>
+
+      {/* Aggregate Stats */}
+      <AggregateStats timeline={timeline} flags={flags} />
 
       {/* AI Summary Card */}
       <div style={{
@@ -221,6 +266,8 @@ export default function PartnerView() {
   const [loading, setLoading] = useState(false);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [error, setError] = useState("");
+  const [flagged, setFlagged] = useState(false);
+  const [flagMsg, setFlagMsg] = useState("");
 
   const handleLookup = async (e) => {
     e.preventDefault();
@@ -232,10 +279,14 @@ export default function PartnerView() {
     setError("");
     setProfile(null);
     setSummary("");
+    setFlagged(false);
+    setFlagMsg("");
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/profile/${cleaned}`);
+      const res = await fetch(`${API_BASE}/profile/${cleaned}`, {
+        headers: PARTNER_HEADERS,
+      });
       if (res.status === 404) {
         setError("इस नंबर का कोई प्रोफाइल नहीं मिला।");
         return;
@@ -247,7 +298,9 @@ export default function PartnerView() {
       // Fetch AI summary
       setSummaryLoading(true);
       try {
-        const sumRes = await fetch(`${API_BASE}/partner/${cleaned}/summary`);
+        const sumRes = await fetch(`${API_BASE}/partner/${cleaned}/summary`, {
+          headers: PARTNER_HEADERS,
+        });
         if (sumRes.ok) {
           const sumData = await sumRes.json();
           setSummary(sumData.summary || "");
@@ -263,6 +316,23 @@ export default function PartnerView() {
       setLoading(false);
     }
   };
+
+  const handleFlag = useCallback(async () => {
+    if (flagged || !profile) return;
+    const cleaned = phone.replace(/\D/g, "");
+    try {
+      await fetch(`${API_BASE}/partner/${cleaned}/flag`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...PARTNER_HEADERS },
+        body: JSON.stringify({ flag: "follow_up_needed" }),
+      });
+    } catch {
+      // Optimistic update even on error
+    }
+    setFlagged(true);
+    setFlagMsg("✅ फॉलो-अप के लिए फ्लैग किया गया।");
+    setTimeout(() => setFlagMsg(""), 4000);
+  }, [flagged, profile, phone]);
 
   return (
     <div style={containerStyle}>
@@ -297,13 +367,35 @@ export default function PartnerView() {
         </div>
       )}
 
+      {/* Flag confirmation */}
+      {flagMsg && (
+        <div style={{ background: "#e8f5e9", color: "#2e7d32", padding: "10px 18px", borderRadius: 12, marginBottom: 12, fontSize: "0.9rem", maxWidth: 560, width: "100%", border: "1px solid #c8e6c9", fontWeight: 600 }}>
+          {flagMsg}
+        </div>
+      )}
+
       {/* Profile */}
       {profile && (
         <ProfileCard
           profile={profile}
           summary={summary}
           summaryLoading={summaryLoading}
+          onFlag={handleFlag}
+          flagged={flagged}
         />
+      )}
+
+      {/* Better empty state when no search yet */}
+      {!profile && !error && !loading && (
+        <div style={{ textAlign: "center", marginTop: 32, color: "#aaa", maxWidth: 400 }}>
+          <div style={{ fontSize: "2.5rem", marginBottom: 10 }}>🔍</div>
+          <div style={{ fontWeight: 600, color: "#888", marginBottom: 6, fontSize: "1rem" }}>
+            किसान की जानकारी खोजें
+          </div>
+          <div style={{ fontSize: "0.85rem", lineHeight: 1.7 }}>
+            ऊपर मोबाइल नंबर डालकर किसी भी किसान का प्रोफाइल, AI सारांश और टाइमलाइन देखें।
+          </div>
+        </div>
       )}
 
       {/* Footer */}

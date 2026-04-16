@@ -25,5 +25,15 @@ __pycache__/
 .vscode/
 .idea/
 
+# Claude Code
+.claude/
+
 # Farmer profiles (user data)
 samadhan/backend/profiles/
+
+# SQLite database (user data — do not commit)
+samadhan/backend/samadhan.db
+samadhan/backend/samadhan.db.bak.*
+
+# Docker
+.dockerignore
